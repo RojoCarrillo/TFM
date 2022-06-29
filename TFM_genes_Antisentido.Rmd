@@ -1,0 +1,1051 @@
+---
+title: "Presentación genes antisentido"
+author: "Juan Jose Rojo Carrillo"
+date: "6/27/2022"
+output:
+ html_document:
+    df_print: paged
+    highlight: kate
+    number_sections: yes
+    theme: paper
+    toc: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Paquetes utilizados:
+```{r,message=FALSE, warning=FALSE}
+library(readr)
+library(DT)
+library(nortest)
+library(ggplot2)
+library(nortest)
+library(dplyr)
+library(RColorBrewer)
+library(gridExtra)
+library(readxl)
+```
+
+
+```{r,results='hide', message=FALSE, warning=FALSE,echo=FALSE}
+tabla_final_AS <- read_csv("~/Desktop/Máster/TFM/archivos_validos/Archivos_finales/AS_solo_prot_coding_final.csv")
+tabla_final_genes <- read_csv("~/Desktop/Máster/TFM/archivos_validos/Archivos_finales/prot_coding_coma_encabezado.csv")
+                             
+tabla_conjunta <- read_csv("~/Desktop/Máster/TFM/archivos_validos/Archivos_finales/TABLA_CONJUNTA.csv")
+
+prot_coding_total_encabezado <- read_table2("~/Desktop/Máster/TFM/prot_coding_total_encabezado.tsv")
+
+primer_filtrado <- read_csv("~/Desktop/Máster/TFM/archivos_validos/Archivos_finales/primer_filtrado.csv", 
+    col_names = FALSE)
+
+prot_coding_comparar_1556 <- read_delim("~/Desktop/Máster/TFM/archivos_validos/Archivos_finales/Para_comparar/prot_coding_comparar_1556.tsv", 
+    delim = "\t", escape_double = FALSE, 
+    col_names = FALSE, trim_ws = TRUE)
+
+prot_coding_total_encabezado <- read_table2("~/Desktop/Máster/TFM/prot_coding_total_encabezado.tsv")
+coding_filtro <- read_table2("~/Desktop/Máster/TFM/coding_filtro.tsv")
+
+gene_type <- read_csv("~/Desktop/Máster/TFM/archivos_validos/Archivos_finales/gene_type.csv")
+
+intersect_AS_repeat <- read_table2("~/Desktop/Máster/TFM/archivos_validos/Archivos_finales/Para_comparar/intersect_AS_repeat.tsv")
+
+intersect_gene_repeat <- read_table2("~/Desktop/Máster/TFM/archivos_validos/Archivos_finales/Para_comparar/intersect_repeat_prot_coding.tsv")
+
+intersect_total_gene <- read_table2("~/Desktop/Máster/TFM/archivos_validos/Archivos_finales/Para_comparar/total_genes_18400_repeat.tsv")
+
+
+total_Repeat<- read_table2("~/Desktop/Máster/TFM/archivos_validos/Archivos_finales/Para_comparar/cut_repeat2_encabezado.tsv")
+
+intersect_AS_gen_encabezado <- read_delim("~/Desktop/Máster/TFM/archivos_validos/Archivos_finales/Para_comparar/intersect_AS_gen_encabezado.tsv", 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+
+coverage_AS_gen_encabezado <- read_delim("~/Desktop/Máster/TFM/archivos_validos/Archivos_finales/Para_comparar/coverage_AS_gen_encabezado.tsv", 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+``` 
+
+
+# Genes codificantes sin AS y con AS 
+
+## Tabla de genes codificantes sin AS
+
+```{r,message=FALSE, warning=FALSE}
+datatable(coding_filtro)
+```
+
+## Tabla de genes codificantes con AS
+
+```{r}
+datatable(tabla_final_genes)
+```
+
+
+## Comparación de tamaño.
+
+```{r}
+barplot(c(median(tabla_final_genes$size),(median(coding_filtro$size))),names.arg = c("Si","No"), main = "Mediana tamaño", xlab="Tamaño (pb)",legend.text = c("Si","No"), col=c("lightcoral","lightblue"),horiz = TRUE,las=1, cex.names = 0.9,cex.axis=0.8)
+```
+
+Resumen datos Genes con AS
+```{r,echo=FALSE}
+summary(tabla_final_genes$size)
+```
+
+```{r}
+lillie.test(tabla_final_genes$size)
+```
+
+
+Resumen datos Genes sin AS
+
+```{r,echo=FALSE}
+summary(coding_filtro$size)
+```
+
+Test de normalidad:
+```{r}
+lillie.test(coding_filtro$size)
+```
+
+Test comparativo de distribuciones no paramétricas
+```{r}
+wilcox.test(coding_filtro$size,tabla_final_genes$size)
+```
+
+
+## Comparación de transcritos alternativos. 
+
+```{r,results='hide', message=FALSE, warning=FALSE,echo=FALSE}
+total_gene_no_AS <- read.csv("/Users/juanjorojo/Desktop/Máster/TFM/18400_transcripts.csv",header=FALSE)
+```
+
+```{r}
+proporcion_no_AS <- table(total_gene_no_AS$V7) #Contabilizar el número de transcritos
+transcript_no_AS<- rbind(as.data.frame(proporcion_no_AS))
+```
+
+
+```{r,echo=FALSE}
+barplot(c(median(transcript_no_AS$Freq),(median(tabla_final_genes$number_trans))),names.arg = c("NO","SI"), main = "Mediana Número Tránscritos", xlab="Número de Tránscritos",legend.text = c("NO","SI"), col=c("lightcoral","lightblue"),horiz = TRUE,las=1, cex.names = 0.9,cex.axis=0.8)
+```
+
+```{r}
+summary(transcript_no_AS$Freq)
+```
+
+
+```{r}
+lillie.test(transcript_no_AS$Freq)
+```
+
+```{r}
+lillie.test(tabla_final_genes$number_trans)
+```
+
+```{r}
+wilcox.test(transcript_no_AS$Freq,tabla_final_genes$number_trans)
+```
+
+
+## Distribución por cromosoma. 
+
+```{r}
+proporciones <- table(tabla_final_genes$chr)
+proporciones_data_frame<- rbind(as.data.frame(proporciones))
+proporciones_data_frame$Var1 <- factor(proporciones_data_frame$Var1,levels = c(seq(1:22),"X","Y"))
+```
+
+```{r}
+#Proporciones para los genes que contienen AS
+summa <- sum(proporciones_data_frame$Freq) #Suma del total de genes que aparecen 
+nuevo_data_frame <- proporciones_data_frame
+for (i in 1:24){
+  valor_chr <- proporciones_data_frame[i,2]
+  normalizado <- valor_chr/summa #Cálculo del número relativo
+  variable_chr <- proporciones_data_frame[i,1]
+  
+  nuevo_data_frame[i,1] <- variable_chr
+  nuevo_data_frame[i,2] <- round(normalizado,4)
+}
+colnames(nuevo_data_frame) <- c("Chr_AS","Freq_ajustada")
+datatable(nuevo_data_frame)
+```
+
+```{r}
+#Proporciones para los genes que no tienen un AS
+variable <- table(coding_filtro$chr)
+df <- rbind(as.data.frame(variable))
+summa1 <-sum(df$Freq) 
+for (i in 1:24){
+  valor_chr <- df[i,2]
+  normalizado <- valor_chr/summa1
+  variable_chr <- df[i,1]
+  
+  df[i,1] <- variable_chr
+  df[i,2] <- round(normalizado,4)
+}
+datatable(df)
+```
+
+```{r}
+par(mfrow=c(1,2))
+variable_genes_con_AS <- table(tabla_final_genes$chr)
+barplot_chr_AS <- barplot(variable_genes_con_AS[c(seq(1:22),"X","Y")],font.axis=2,las=2,col=c("lightcoral"),ylab="Frecuencia", main = "Número de genes",legend.text = "AS")
+variable_genes_sin_AS <- table(coding_filtro$chr)
+barplot_chr_genes <- barplot(variable_genes_sin_AS[c(seq(1:22),"X","Y")],font.axis=2,las=2, main="por cromosoma",col=c("lightblue"),ylab="Frecuencia", legend.text = "Sin AS")
+```
+
+## Secuencias Repetidas
+
+### Referencia
+
+```{r}
+total_repeat <- table(total_Repeat$family_repeat) #Calculo del tipo de repetición más repetida
+barplot(total_repeat,font.axis=2,las=2, main="Frecuencia Aparición Secuencias Repetidas",col=c("lightcoral"),ylab="Frecuencia",cex.names = 0.65,cex.axis=0.6)
+```
+
+```{r}
+total_repeat <- table(total_Repeat$type_repeat) #Contabilizar las veces que se repite cada repetición y la familia a la que pertenece
+barplot(total_repeat,font.axis=2,las=2, main="Frecuencia Aparición Secuencias Repetidas",col=c("lightcoral"),ylab="Frecuencia",cex.names = 0.65,cex.axis=0.6)
+```
+
+```{r}
+total_repeat_table<- rbind(as.data.frame(total_repeat))
+#datatable(total_repeat_table,colnames =c("Nombre Gen","Frecuencia"))
+```
+
+```{r}
+suma_repe <- sum(total_repeat_table$Freq)
+mat = matrix(ncol = 0, nrow = 0)
+df=data.frame(mat)
+for (i in 1:13){
+  valor_chr <- total_repeat_table[i,2]
+  normalizado <- valor_chr/suma_repe
+  variable_chr <- total_repeat_table[i,1]
+  
+  df[i,1] <- variable_chr
+  df[i,2] <- round(normalizado,7)
+}
+datatable(df)
+```
+
+### Codificantes con AS
+
+```{r,echo=FALSE}
+gene_prot_coding_repeat <- table(intersect_gene_repeat$family)
+barplot(gene_prot_coding_repeat,font.axis=2,las=2, main="Frecuencia Aparición Secuencias Repetidas En Genes Codificantes con AS",col=c("lightblue"),ylab="Frecuencia",cex.names =0.65,cex.axis=0.6,cex.main=1)
+```
+
+```{r}
+gene_prot_coding_repeat <- table(intersect_gene_repeat$type_repeat)
+barplot(gene_prot_coding_repeat,font.axis=2,las=2, main="Frecuencia Aparición Secuencias Repetidas En Genes Codificantes con AS",col=c("lightcoral"),ylab="Frecuencia",cex.names = 0.65,cex.axis=0.6,cex.main=1)
+```
+
+```{r}
+repeat_gene_prot_coding<- rbind(as.data.frame(gene_prot_coding_repeat ))
+#datatable(repeat_gene_prot_coding)
+```
+
+
+```{r}
+suma_repe <- sum(repeat_gene_prot_coding$Freq)
+mat = matrix(ncol = 0, nrow = 0)
+df=data.frame(mat)
+for (i in 1:13){
+  valor_chr <- repeat_gene_prot_coding[i,2]
+  normalizado <- valor_chr/suma_repe
+  variable_chr <- repeat_gene_prot_coding[i,1]
+  
+  df[i,1] <- variable_chr
+  df[i,2] <- round(normalizado,7)
+}
+datatable(df)
+```
+
+```{r}
+repeat_gene <- table(intersect_gene_repeat$name_gen) #Cálculo del numero de veces que aparece cada gen 
+repeat_gene_data_frame<- rbind(as.data.frame(repeat_gene))
+datatable(repeat_gene_data_frame)
+```
+
+## Codificantes sin AS
+
+```{r,results='hide', message=FALSE, warning=FALSE,echo=FALSE}
+intersect_total_gene <- read.delim("~/Desktop/Máster/TFM/archivos_validos/Archivos_finales/Para_comparar/18400_repeat.tsv",header = FALSE)
+
+colnames(intersect_total_gene) <- c("Chr","Pos_init","Pos_fin","strand","id_gen","name_gen","chr_repeat","pos_init_rep","pos_fin_rep","strand_rep","name_repeat","type_repeat","family")
+```
+
+```{r}
+prot_coding_repeat <- table(intersect_total_gene$family)
+barplot(prot_coding_repeat,font.axis=2,las=2, main="Frecuencia Aparición Secuencias Repetidas En Genes Codificantes sin AS",col=c("lightblue"),ylab="Frecuencia",cex.names =0.65,cex.axis=0.6,cex.main=1)
+```
+
+```{r}
+coding_total <- table(intersect_total_gene$type_repeat)
+barplot(coding_total,font.axis=2,las=2, main="Frecuencia Aparición Secuencias Repetidas En Genes Codificantes sin AS",col=c("lightblue"),ylab="Frecuencia",cex.names =0.65,cex.axis=0.6,cex.main=1)
+```
+
+```{r}
+repeat_gene_data_frame_1<- rbind(as.data.frame(coding_total))
+#datatable(repeat_gene_data_frame_1)
+```
+
+
+```{r}
+suma_repe <- sum(repeat_gene_data_frame_1$Freq)
+mat = matrix(ncol = 0, nrow = 0)
+df=data.frame(mat)
+for (i in 1:13){
+  valor_chr <- repeat_gene_data_frame_1[i,2]
+  normalizado <- valor_chr/suma_repe
+  variable_chr <- repeat_gene_data_frame_1[i,1]
+  
+  df[i,1] <- variable_chr
+  df[i,2] <- round(normalizado,7)
+}
+datatable(df)
+```
+
+# Gen antisentido y Gen Sentido.
+
+## Tabla de genes AS
+
+```{r}
+datatable(tabla_final_AS)
+```
+
+## Tabla conjunta. 
+
+```{r}
+nuevo_out <- dplyr::left_join(primer_filtrado,prot_coding_comparar_1556,by=c("X8"= "X6")) #Reunión de las tablas generadas con left join para comprobar que ningún gen queda sin su pareja
+nuevo_out$X1.y <- gsub('chr', '',nuevo_out$X1.y) #Con gsub se elimina la parte de "chr" antes del número del cromosoma para mantener el mismo formato
+nuevo_out <- nuevo_out[,c(1,2,3,4,5,7,8,9,10,11,12,13)]
+
+datatable(nuevo_out,colnames = c("Id_ens_AS","chr_AS","Pos_init","Pos_fin","Strand","AS","Gene","Chr_gene","Pos_init_gen","Pos_fin_gen","Strand_gene","ID_gene"))
+```
+
+## Comparación Tamaño.
+
+```{r}
+barplot(c(median(tabla_final_AS$size),(median(tabla_final_genes$size))),names.arg = c("AS","S"), xlab="Tamaño (pb)",main = "Mediana tamaño", col=c("lightcoral","lightblue"),horiz = TRUE,las=1, cex.names = 0.9,cex.axis=0.8)
+#legend("bottomright", legend = c("Antisentido","Sentido"),fill=c("lightcoral","lightblue"))
+```
+ 
+```{r}
+tabla_conjunta$type <- factor(tabla_conjunta$type,levels=c("GEN","AS"), labels = c("S","AS")) #Modificación del nombre referido a cada tipo de gen
+```
+
+
+```{r,warning=FALSE}
+p <- ggplot(tabla_conjunta, aes(x=type, y=size,fill=type)) + 
+  geom_boxplot(outlier.size=1,outlier.shape=5)+ scale_y_continuous(name = "Tamaño (pb)")+scale_x_discrete(name =" " )+theme_classic()+theme(plot.title=element_text(hjust=0.5))+coord_flip()+labs(title="Distribución de Tamaños")+ theme(legend.position="none")
+p
+```
+
+Resumen datos AS
+```{r}
+summary(tabla_final_AS$size)
+```
+
+```{r}
+#Test de normalidad para el tamaño de los genes AS
+lillie.test(tabla_final_AS$size)
+```
+
+Resumen datos gen
+```{r}
+summary(tabla_final_genes$size)
+```
+
+
+```{r}
+#Test de normalidad para el tamaño de los genes AS
+lillie.test(tabla_final_genes$size)
+```
+
+
+```{r}
+#Comparación de medianas mediante un test no parámetrico.
+wilcoxon <- wilcox.test(tabla_final_AS$size,tabla_final_genes$size)
+wilcoxon
+```
+
+
+## Comparación de transcritos alternativos
+
+
+```{r}
+barplot(c(median(tabla_final_AS$number_trans),(median(tabla_final_genes$number_trans))),names.arg = c("AS","GEN"), main = "Mediana Número Tránscritos", xlab="Número de Tránscritos",col=c("lightcoral","lightblue"),horiz = TRUE,las=1, cex.names = 0.9,cex.axis=0.8)
+```
+
+
+Resumen Transcritos AS
+```{r}
+summary(tabla_final_AS$number_trans)
+```
+
+Resumen Transcritos Genes con AS
+
+```{r}
+summary(tabla_final_genes$number_trans)
+```
+
+```{r}
+lillie.test(tabla_final_AS$number_trans)
+```
+
+
+```{r}
+lillie.test(tabla_final_genes$number_trans)
+```
+
+
+
+```{r}
+wilcox.test(tabla_final_AS$number_trans,tabla_final_genes$number_trans)
+```
+
+
+
+## Intersect y Coverage
+
+
+```{r}
+frecuencia <- table(round(coverage_AS_gen_encabezado$value3,1)) #Se reducen los decimales que se contabilizan los datos para poder establecer relaciones
+frecuencia_tabla <- rbind(as.data.frame(frecuencia))
+datatable(frecuencia_tabla)
+```
+
+
+```{r}
+barplot(frecuencia,main = "Solapamiento AS - GEN", xlab="Frecuencia",xlim=c(0,800),ylab="Grado de solapamiento",col=c("lightcoral"),horiz = TRUE,las=1, cex.names = 0.9,cex.axis=0.8)
+```
+
+
+```{r}
+genes <- table(intersect_AS_gen_encabezado$gene_name) #Veces que se solapa un antisentido con un gen sentido
+porcentaje_tabla <- rbind(as.data.frame(genes))
+datatable(porcentaje_tabla)
+```
+
+
+## AS
+
+```{r}
+repeat_AS <- table(intersect_AS_repeat$type_repeat)
+barplot(repeat_AS,font.axis=2,las=2, main="Frecuencia Aparición Secuencias Repetidas Solapadas con AS",col=c("lightcoral"),ylab="Frecuencia",cex.names = 0.9,cex.axis=0.8)
+```
+
+
+```{r}
+repeat_AS <- table(intersect_AS_repeat$type_repeat)
+prop_repeat_AS <- rbind(as.data.frame(repeat_AS))
+#datatable(prop_repeat_AS)
+```
+
+
+
+```{r}
+suma_repe <- sum(prop_repeat_AS$Freq)
+mat = matrix(ncol = 0, nrow = 0)
+df=data.frame(mat)
+for (i in 1:13){
+  valor_chr <- prop_repeat_AS[i,2]
+  normalizado <- valor_chr/suma_repe
+  variable_chr <- prop_repeat_AS[i,1]
+  
+  df[i,1] <- variable_chr
+  df[i,2] <- round(normalizado,4)
+}
+datatable(df)
+```
+
+
+```{r}
+repeat_AS <- table(intersect_AS_repeat$name_gen) #Veces que se solapa un antisentido con una secuencia repetida.
+repeat_AS_data_frame<- rbind(as.data.frame(repeat_AS))
+datatable(repeat_AS_data_frame)
+```
+
+# Expresión higados humanos.
+
+```{r,results='hide', message=FALSE, warning=FALSE,echo=FALSE}
+exprMatrix_Prot_coding <- read_delim("~/Desktop/Máster/IDs_unicos/ensemb_1556/exprMatrix.tsv", 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+
+OUT_Prot_coding <- read_delim("~/Desktop/Máster/IDs_unicos/ensemb_1556/OUT.tsv", 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+
+exprMatrix_AS <- read_delim("~/Desktop/Máster/IDs_unicos/id_ensembl_1656/exprMatrix.tsv", 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+
+OUT_AS<- read_delim("~/Desktop/Máster/IDs_unicos/id_ensembl_1656/OUT.tsv", 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+
+Nombre_AS_Gen <- read_csv("~/Desktop/Máster/TFM/archivos_validos/Archivos_finales/primer_filtrado.csv", 
+    col_names = FALSE)
+
+prot_coding_comparar_1556 <- read_delim("~/Desktop/Máster/TFM/archivos_validos/Archivos_finales/Para_comparar/prot_coding_comparar_1556.tsv", 
+    delim = "\t", escape_double = FALSE, 
+    col_names = FALSE, trim_ws = TRUE)
+```
+
+
+```{r}
+OUT_Prot_coding$associated_gene <- gsub('\\..*$', '',OUT_Prot_coding$associated_gene) #Eliminación de los números que hay después de los puntos
+OUT_AS$associated_gene <- gsub('\\..*$', '',OUT_AS$associated_gene) 
+
+table_out_AS <- table(OUT_AS$associated_gene)
+df_AS_total <- rbind(as.data.frame(table_out_AS))
+```
+
+```{r}
+ID_AS <- Nombre_AS_Gen[,c(1,7)]
+t1 <- ID_AS %>% distinct(X7, .keep_all = TRUE) #Filtrado para que no se repitan isoformas 
+ID_del_AS_con_GEN <- Nombre_AS_Gen[,c(1,8)]
+t_id_AS_gene <- ID_del_AS_con_GEN %>% distinct(X8, .keep_all = TRUE)
+```
+
+
+```{r}
+id_nombre <-dplyr::inner_join(df_AS_total,t1,by=c("Var1" = "X1"))
+genes_AS_e_id <- id_nombre[,c(1,3)]
+isoforma_id_nombre <-dplyr::inner_join(ID_del_AS_con_GEN,genes_AS_e_id,by=c("X1" = "Var1")) #Reunión de tablas que coincidan en el ID del gen antisentido
+```
+
+
+
+```{r}
+OUT_Prot_coding$associated_gene <- gsub('\\..*$', '',OUT_Prot_coding$associated_gene)
+table_out_gene <- table(OUT_Prot_coding$associated_gene)
+df_gene_total <- rbind(as.data.frame(table_out_gene))
+```
+
+
+
+```{r}
+ID_gene <- prot_coding_comparar_1556[,c(5,6)] #Selección del id del gen sentido con su nombre
+t2<- ID_gene %>% distinct(X5, .keep_all = TRUE) #Filtrar ante posibles repeticiones del id.
+```
+
+
+```{r}
+id_nombre <-dplyr::inner_join(df_gene_total,t2,by=c("Var1" = "X5")) #Identificación del gen sentido que se expresa
+id_nombre_gen <- id_nombre[,c(1,3)]
+```
+
+
+```{r}
+isoforma_y_gen <- OUT_AS[,c(1,7)]
+AS_no_Sentido <- dplyr::left_join(isoforma_id_nombre,id_nombre_gen,by=c("X8"="X6")) #Con left join seleccionamos los genes AS que se expresan en el hígaod, cuando aparezca una celda vacía la tabla significa que no se expresa el gen sentido. 
+id_AS_name_no_expr_sent <- AS_no_Sentido[c(2,3,7,17,20,21,26,28,29,32,33,37,42,47,48,53,55,56,63,64,67,70,75,77,79,85,86,97,104,107,108,112,114,116,124,128,130,140,142,146,147),c(1,3,2)]
+datatable(id_AS_name_no_expr_sent)
+```
+
+
+```{r}
+AS_matriz <- exprMatrix_AS
+AS_matriz$ids <- gsub('_.*$', '',AS_matriz$ids) #Eliminación del gen asociado a cada isoforma del archivo de la matriz de expresión
+isoforma_id_nombre <-dplyr::inner_join(isoforma_y_gen,ID_AS,by=c("associated_gene" = "X1")) #Relacionar la isoforma creada anteriormente con el otro fichero que relaciona a la isoforma con el id del gen
+id_gen_noAS_noexprx <- id_AS_name_no_expr_sent[,c(1,3)]
+isoforma_id_nombre <-dplyr::inner_join(isoforma_id_nombre,id_gen_noAS_noexprx,by=c("associated_gene" = "X1"))
+
+uniq_matriz_AS_no_gene_id <- isoforma_id_nombre %>% distinct(isoform, .keep_all = TRUE)
+datatable(uniq_matriz_AS_no_gene_id) #Genes Antisentido que no expresan el gen sentido
+```
+
+## Genes AS
+```{r}
+Matriz_AS <- exprMatrix_AS
+colnames(Matriz_AS) <- c("ID","OM001","OM010","OM012","OM015","OM019","OM025","OM028","OM029","OM032","OM04","OM05","OM06","OM009","OM33","OM49")
+heatmap_AS <- Matriz_AS
+heatmap_matrix_AS <- as.matrix(heatmap_AS[,2:16]) #Matriz de expresión de los transcritos de genes AS
+rownames(heatmap_matrix_AS) <- exprMatrix_AS$ids
+heatmap(heatmap_matrix_AS,Rowv=NA,Colv=NA,col= colorRampPalette(brewer.pal(5,"YlOrRd"))(4),cexRow=0.01,cexCol = 0.7)
+```
+
+```{r}
+boxplot(Matriz_AS[,2:16],cex.axis=0.7,las=2,col=1:7,ylab="TPM",horizontal = TRUE)
+```
+
+A continuación se genera un gráfico de la distribución de la expresión de los genes antisentido por paciente. Se realiza una cuenta de la expresión sin decimales para agrupar por número entero y se represtan al final todos en un gráfico. 
+
+```{r}
+OM001 <- table(round(Matriz_AS$OM001,0))
+OM001_df <- rbind(as.data.frame(OM001))
+OM001_plot <- ggplot(OM001_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM001")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=6))
+```
+
+```{r}
+OM010 <- table(round(Matriz_AS$OM010,0))
+OM010_df <- rbind(as.data.frame(OM010))
+OM010_plot <- ggplot(OM010_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM010")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=6))
+
+```
+
+
+```{r}
+OM012 <- table(round(Matriz_AS$OM012,0))
+OM012_df <- rbind(as.data.frame(OM012))
+OM012_plot <- ggplot(OM012_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM012")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=6))
+```
+
+
+```{r}
+OM015 <- table(round(Matriz_AS$OM015,0))
+OM015_df <- rbind(as.data.frame(OM015))
+OM015_plot <- ggplot(OM015_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM015")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=6))
+```
+
+```{r}
+OM019 <- table(round(Matriz_AS$OM019,0))
+OM019_df <- rbind(as.data.frame(OM019))
+OM019_plot <- ggplot(OM019_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM019")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=6))
+```
+
+
+```{r}
+OM025 <- table(round(Matriz_AS$OM025,0))
+OM025_df <- rbind(as.data.frame(OM025))
+OM025_plot <- ggplot(OM025_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM025")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=6))
+```
+
+```{r}
+OM028 <- table(round(Matriz_AS$OM028,0))
+OM028_df <- rbind(as.data.frame(OM028))
+OM028_plot <- ggplot(OM028_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM028")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=6))
+```
+
+```{r}
+OM029 <- table(round(Matriz_AS$OM029,0))
+OM029_df <- rbind(as.data.frame(OM029))
+OM029_plot <- ggplot(OM029_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM029")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=6))
+```
+
+```{r}
+OM032 <- table(round(Matriz_AS$OM032,0))
+OM032_df <- rbind(as.data.frame(OM032))
+OM032_plot <- ggplot(OM032_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM032")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=6))
+
+
+```
+
+
+```{r}
+OM04 <- table(round(Matriz_AS$OM04,0))
+OM04_df <- rbind(as.data.frame(OM04))
+OM04_plot <- ggplot(OM04_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM04")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=6))
+
+```
+
+```{r}
+OM05 <- table(round(Matriz_AS$OM05,0))
+OM05_df <- rbind(as.data.frame(OM05))
+OM05_plot <- ggplot(OM05_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM05")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=6))
+
+
+```
+
+```{r}
+OM06 <- table(round(Matriz_AS$OM06,0))
+OM06_df <- rbind(as.data.frame(OM06))
+OM06_plot <- ggplot(OM06_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM06")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=6))
+
+```
+
+```{r}
+OM009 <- table(round(Matriz_AS$OM009,0))
+OM009_df <- rbind(as.data.frame(OM009))
+OM009_plot <- ggplot(OM009_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM009")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=6))
+
+
+```
+
+```{r}
+OM33 <- table(round(Matriz_AS$OM33,0))
+OM33_df <- rbind(as.data.frame(OM33))
+OM33_plot <- ggplot(OM33_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM33")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=6))
+
+```
+
+
+```{r}
+OM49 <- table(round(Matriz_AS$OM49,0))
+OM49_df <- rbind(as.data.frame(OM49))
+OM49_plot <- ggplot(OM49_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM49")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=6))
+```
+
+```{r}
+grid.arrange(OM001_plot,OM010_plot,OM012_plot,OM015_plot,OM019_plot,OM025_plot,OM028_plot,OM029_plot,OM032_plot,OM04_plot,OM05_plot,OM06_plot,OM009_plot,OM33_plot,OM49_plot,ncol=5)
+```
+
+
+```{r}
+AS_matriz <- exprMatrix_AS
+AS_matriz$ids <- gsub('_.*$', '',AS_matriz$ids)
+
+isoforma_y_gen_AS <- OUT_AS[,c(1,7)]
+isoforma_y_gen_AS$associated_gene <- gsub('\\..*$', '',isoforma_y_gen_AS$associated_gene)
+
+isoforma_id_nombre_AS <-dplyr::inner_join(isoforma_y_gen_AS,ID_AS,by=c("associated_gene" = "X1"))
+
+matrix_nombre_id_AS <- dplyr::inner_join(isoforma_id_nombre_AS,AS_matriz,by=c("isoform" = "ids"))
+```
+
+
+Expresión media 
+
+```{r}
+para_media <- matrix_nombre_id_AS
+AS_TpmRNA_mean <- apply(para_media[,c(4:18)], 1, mean) #Media de expresión para cada isoforma para los genes antisentido
+out_cambiado_prot_coding <- cbind(para_media,AS_TpmRNA_mean)
+isoforma_y_media_AS <- out_cambiado_prot_coding[,c(1,2,3,19)]
+datatable(isoforma_y_media_AS)
+```
+
+Siguiendo el modelo anterior se realizan los mismos para agrupar la expresión de cada isoforma en base al número entero de su expresión en TPM
+```{r}
+Isoform <- table(round(isoforma_y_media_AS$AS_TpmRNA_mean,0))
+isoform_df <- rbind(as.data.frame(Isoform))
+isoform_plot <- ggplot(isoform_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+theme_minimal()+theme(legend.position="none")+labs(x="Expresión TPM")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=6))+geom_line(group=1)
+isoform_plot
+```
+
+
+```{r}
+isoform_mean_AS <- isoforma_y_media_AS[,c(1,4)]
+id_nombre <-dplyr::inner_join(uniq_matriz_AS_no_gene_id,isoform_mean_AS,by="isoform")
+uniq_AS_no_expr_gen_name_id <- id_nombre %>% distinct(isoform, .keep_all = TRUE)
+```
+
+
+```{r}
+genes_AS_no_S <- table(uniq_AS_no_expr_gen_name_id$X7)
+```
+
+```{r}
+OUT_Prot_coding$associated_gene <- gsub('\\..*$', '',OUT_Prot_coding$associated_gene)
+
+table_out_gene <- table(OUT_Prot_coding$associated_gene)
+df_gene_total <- rbind(as.data.frame(table_out_gene))
+```
+
+```{r}
+ID_gene <- prot_coding_comparar_1556[,c(5,6)]
+t2<- ID_gene %>% distinct(X5, .keep_all = TRUE)
+```
+
+
+```{r}
+id_nombre <-dplyr::inner_join(df_gene_total,t2,by=c("Var1" = "X5"))
+id_nombre_gen <- id_nombre[,c(1,3)]
+```
+
+```{r}
+media_expresion_mas_gen <-dplyr::inner_join(isoforma_y_media_AS,t_id_AS_gene,by=c("associated_gene" = "X1"))
+```
+
+
+## Genes S
+
+Para los genes sentido sentido se sigue el mismo modelo anterior.
+```{r}
+OUT_prueba <- exprMatrix_Prot_coding
+colnames(OUT_prueba) <- c("ID","OM001","OM010","OM012","OM015","OM019","OM025","OM028","OM029","OM032","OM04","OM05","OM06","OM009","OM33","OM49")
+heatmap_AS <- OUT_prueba
+heatmap_matrix_AS <- as.matrix(heatmap_AS[,2:16])
+rownames(heatmap_matrix_AS) <- exprMatrix_Prot_coding$ids
+heatmap(heatmap_matrix_AS,Rowv=NA,Colv=NA,col= colorRampPalette(brewer.pal(5,"YlOrRd"))(4),cexRow=0.001)
+```
+
+```{r}
+OM001 <- table(round(OUT_prueba$OM001,0))
+OM001_df <- rbind(as.data.frame(OM001))
+OM001_plot <- ggplot(OM001_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM001")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=2))
+```
+
+```{r}
+OM010 <- table(round(OUT_prueba$OM010,0))
+OM010_df <- rbind(as.data.frame(OM010))
+OM010_plot <- ggplot(OM010_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM010")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=2))
+
+```
+
+
+```{r}
+OM012 <- table(round(OUT_prueba$OM012,0))
+OM012_df <- rbind(as.data.frame(OM012))
+OM012_plot <- ggplot(OM012_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM012")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=2))
+```
+
+
+```{r}
+OM015 <- table(round(OUT_prueba$OM015,0))
+OM015_df <- rbind(as.data.frame(OM015))
+OM015_plot <- ggplot(OM015_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM015")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=2))
+```
+
+```{r}
+OM019 <- table(round(OUT_prueba$OM019,0))
+OM019_df <- rbind(as.data.frame(OM019))
+OM019_plot <- ggplot(OM019_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM019")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=2))
+```
+
+
+```{r}
+OM025 <- table(round(OUT_prueba$OM025,0))
+OM025_df <- rbind(as.data.frame(OM025))
+OM025_plot <- ggplot(OM025_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM025")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=2))
+```
+
+```{r}
+OM028 <- table(round(OUT_prueba$OM028,0))
+OM028_df <- rbind(as.data.frame(OM028))
+OM028_plot <- ggplot(OM028_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM028")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=2))
+```
+
+```{r}
+OM029 <- table(round(OUT_prueba$OM029,0))
+OM029_df <- rbind(as.data.frame(OM029))
+OM029_plot <- ggplot(OM029_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM029")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=2))
+```
+
+```{r}
+OM032 <- table(round(OUT_prueba$OM032,0))
+OM032_df <- rbind(as.data.frame(OM032))
+OM032_plot <- ggplot(OM032_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM032")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=2))
+```
+
+
+```{r}
+OM04 <- table(round(OUT_prueba$OM04,0))
+OM04_df <- rbind(as.data.frame(OM04))
+OM04_plot <- ggplot(OM04_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM04")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=2))
+```
+
+```{r}
+OM05 <- table(round(OUT_prueba$OM05,0))
+OM05_df <- rbind(as.data.frame(OM05))
+OM05_plot <- ggplot(OM05_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM05")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=2))
+```
+
+```{r}
+OM06 <- table(round(OUT_prueba$OM06,0))
+OM06_df <- rbind(as.data.frame(OM06))
+OM06_plot <- ggplot(OM06_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM06")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=2))
+```
+
+```{r}
+OM009 <- table(round(OUT_prueba$OM009,0))
+OM009_df <- rbind(as.data.frame(OM009))
+OM009_plot <- ggplot(OM009_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM009")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=2))
+```
+
+```{r}
+OM33 <- table(round(OUT_prueba$OM33,0))
+OM33_df <- rbind(as.data.frame(OM33))
+OM33_plot <- ggplot(OM33_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM33")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=2))
+```
+
+
+```{r}
+OM49 <- table(round(OUT_prueba$OM49,0))
+OM49_df <- rbind(as.data.frame(OM49))
+OM49_plot <- ggplot(OM49_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+geom_line(group=1)+theme_minimal()+theme(legend.position="none")+labs(x="OM49")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=6))
+```
+
+```{r}
+grid.arrange(OM001_plot,OM010_plot,OM012_plot,OM015_plot,OM019_plot,OM025_plot,OM028_plot,OM029_plot,OM032_plot,OM04_plot,OM05_plot,OM06_plot,OM009_plot,OM33_plot,OM49_plot,ncol=5)
+```
+
+```{r}
+gene_matriz <- exprMatrix_Prot_coding
+gene_matriz$ids <- gsub('_.*$', '',gene_matriz$ids)
+isoforma_y_gen <- OUT_Prot_coding[,c(1,7)]
+isoforma_y_gen$associated_gene <- gsub('\\..*$', '',isoforma_y_gen$associated_gene)
+isoforma_id_gen <-dplyr::inner_join(isoforma_y_gen,id_nombre_gen ,by=c("associated_gene" = "Var1"))
+matrix_nombre_id <- dplyr::inner_join(isoforma_id_gen,gene_matriz,by=c("isoform" = "ids"))
+```
+
+
+```{r}
+para_media <- matrix_nombre_id
+AS_TpmRNA_mean <- apply(para_media[,c(4:18)], 1, mean)
+out_cambiado_prot_coding <- cbind(para_media,AS_TpmRNA_mean)
+isoforma_y_media_gen <- out_cambiado_prot_coding[,c(1,2,3,19)]
+```
+
+```{r}
+t7 <- isoforma_y_media_gen %>% distinct(isoform, .keep_all = TRUE)
+datatable(t7)
+```
+
+
+```{r}
+Isoform <- table(round(t7$AS_TpmRNA_mean,0))
+isoform_df <- rbind(as.data.frame(Isoform))
+isoform_plot <- ggplot(isoform_df,aes(x=Var1,y=Freq,fill=Freq))+geom_col()+theme_minimal()+theme(legend.position="none")+labs(x="Expresión TPM")+theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour="orange", size=rel(1)),axis.title=element_text(size=10,face="bold"))+theme(axis.text.x = element_text(angle = 90, hjust = 1),axis.text = element_text(size=6))+geom_line(group=1)
+isoform_plot
+```
+
+```{r}
+AS_gen <- media_expresion_mas_gen[,c(5,3)]
+```
+
+```{r}
+df_genes <- rbind(as.data.frame(table(t7$X6)))
+gen_id <- t7[,c(2,3)]
+t18 <- gen_id %>% distinct(associated_gene, .keep_all = TRUE)
+gen_sin_AS <- dplyr::left_join(t18,AS_gen,by=c("X6"="X8"))
+t28 <- gen_sin_AS %>% distinct(associated_gene, .keep_all = TRUE)
+datatable(t28)
+```
+
+# Genes S y AS comparados
+
+```{r}
+media_expresion_mas_gen_AS <-dplyr::inner_join(media_expresion_mas_gen,isoforma_y_media_gen,by=c("X8" = "X6"))
+datatable(media_expresion_mas_gen_AS)
+```
+
+## Genes sin AS.
+
+```{r,warning=FALSE,message=FALSE}
+Genes_sin_expresion_AS <- read_excel("~/Desktop/tablas_expresion/Genes_sin_expresion_AS.xlsx",col_names = FALSE)
+```
+
+
+```{r}
+genes_sin_AS <-dplyr::inner_join(t7,Genes_sin_expresion_AS,by=c("associated_gene" = "...1"))
+```
+
+```{r}
+Genes_sin_AS_S <- genes_sin_AS[,c(1,2,3,4)]
+t100 <- Genes_sin_AS_S %>% distinct(isoform, .keep_all = TRUE)
+datatable(t100)
+```
+
+## Genes S y AS.
+
+```{r}
+solo_AS_con_S <- media_expresion_mas_gen_AS %>% distinct(isoform.x, .keep_all = TRUE) #Selección para isoformas únicas de genes AS
+solo_S_con_AS <- media_expresion_mas_gen_AS %>% distinct(isoform.y, .keep_all = TRUE) #Selección para isoformas únicas de genes S
+#Esto se realiza para poder seleccionar las columnas únicas para cada tipo de dato ya que al utilizar left o inner join se pueden generar datos duplicados para cumplir todas las correspondencias. 
+```
+
+### Expresión
+
+```{r}
+TPM_mean_GEN_sin_AS <- mean(t100$AS_TpmRNA_mean)
+TPM_solo_AS_con_S <- mean(solo_AS_con_S$AS_TpmRNA_mean.x)
+TPM_solo_S_con_AS <- mean(solo_S_con_AS$AS_TpmRNA_mean.y)
+```
+
+
+```{r}
+medias_data_frame <- data.frame("Gen Sin AS"=TPM_mean_GEN_sin_AS, "AS con S"=TPM_solo_AS_con_S, "S con AS"=TPM_solo_S_con_AS) #Dara frame para relacionar la media de expresión de cada tipo de dato
+```
+
+
+```{r}
+#Comparación de la mediana de expresión para cada valor obtenido anteriormente
+TPM_median_GEN_sin_AS <- median(t100$AS_TpmRNA_mean)
+TPM_median_solo_AS_con_S <- median(solo_AS_con_S$AS_TpmRNA_mean.x)
+TPM_median_solo_S_con_AS <- median(solo_S_con_AS$AS_TpmRNA_mean.y)
+
+median_data_frame <- data.frame("Type"=c("Gen_sin_AS","AS_con_S","S_con_AS"),"Mean"=c(TPM_median_GEN_sin_AS,TPM_median_solo_AS_con_S,TPM_median_solo_S_con_AS))
+
+barplot(c(TPM_median_solo_AS_con_S,TPM_median_solo_S_con_AS),names.arg = c("AS","S"), main = "Mediana de TPM de expresión", xlab="TPM", col=c("lightcoral","lightblue"),horiz = TRUE,las=1, cex.names = 0.9,cex.axis=0.8,xlim=c(0,7.5))
+```
+
+```{r}
+wilcox.test(solo_AS_con_S$AS_TpmRNA_mean.x,solo_S_con_AS$AS_TpmRNA_mean.y)
+```
+
+
+
+
+```{r}
+isoform_median_solo_AS_con_S <- table(solo_AS_con_S$X7)
+isoform_median_solo_S_con_AS <- table(solo_S_con_AS$X8)
+barplot(c(median(isoform_median_solo_AS_con_S),median(isoform_median_solo_S_con_AS)),names.arg = c("AS","S"), main = "Mediana de transcritos", xlab="Número de transcritos", col=c("lightcoral","lightblue"),horiz = TRUE,las=1, cex.names = 0.9,cex.axis=0.8,xlim=c(0,1.1))
+```
+
+
+```{r}
+TPM_median_GEN_sin_AS <- median(t100$AS_TpmRNA_mean)
+TPM_median_solo_AS_con_S <- median(solo_AS_con_S$AS_TpmRNA_mean.x)
+
+barplot(c(TPM_median_GEN_sin_AS,TPM_median_solo_S_con_AS),names.arg = c("No","Si"), main = "Mediana de TPM de expresión", xlab="TPM", col=c("lightcoral","lightblue"),horiz = TRUE,las=1, cex.names = 0.9,cex.axis=0.8,xlim=c(0,7.5))
+```
+
+```{r}
+wilcox.test(t100$AS_TpmRNA_mean,solo_S_con_AS$AS_TpmRNA_mean.y)
+```
+
+
+```{r}
+TPM_median_GEN_sin_AS <- median(t100$AS_TpmRNA_mean)
+TPM_median_solo_AS_con_S <- median(solo_AS_con_S$AS_TpmRNA_mean.x)
+TPM_median_solo_S_con_AS <- median(solo_S_con_AS$AS_TpmRNA_mean.y)
+
+isoform_gen_sin_As <- table(t100$X6)
+isoform_gen_con_AS <- table(solo_AS_con_S$X8)
+
+barplot(c(median(isoform_gen_sin_As),median(isoform_gen_con_AS)),names.arg = c("No","Si"), main = "Mediana de transcritos", xlab="Número de transcritos", col=c("lightcoral","lightblue"),horiz = TRUE,las=1, cex.names = 0.9,cex.axis=0.8,xlim=c(0,1.1))
+```
+
+## AS sin S
+
+```{r}
+AS_matriz <- exprMatrix_AS
+AS_matriz$ids <- gsub('_.*$', '',AS_matriz$ids)
+isoforma_id_nombre <-dplyr::inner_join(isoforma_y_gen_AS,ID_AS,by=c("associated_gene" = "X1"))
+id_gen_noAS_noexprx <- id_AS_name_no_expr_sent[,c(1,3)]
+isoforma_id_nombre <-dplyr::inner_join(isoforma_id_nombre,id_gen_noAS_noexprx,by=c("associated_gene" = "X1"))
+
+isoform_TPM_medio <- isoforma_y_media_AS[,c(1,4)]
+
+uniq_matriz_AS_no_gene_id <- isoforma_id_nombre %>% distinct(isoform, .keep_all = TRUE)
+```
+
+
+```{r}
+tabla_AS_no_S_tpm_medio <- dplyr::inner_join(uniq_matriz_AS_no_gene_id,isoform_TPM_medio,by="isoform")
+datatable(tabla_AS_no_S_tpm_medio)
+sin_gen_S <- tabla_AS_no_S_tpm_medio[,c(1,2,3,5)]
+AS_S_no_S <- tabla_AS_no_S_tpm_medio[,c(3,4)]
+```
+
+
+```{r}
+barplot(c(median(sin_gen_S$AS_TpmRNA_mean),median(solo_AS_con_S$AS_TpmRNA_mean.x)),names.arg = c("No","Si"), main = "Mediana de TPM de expresión", xlab="TPM", col=c("lightcoral","lightblue"),horiz = TRUE,las=1, cex.names = 0.9,cex.axis=0.8,xlim=c(0,3.5))
+```
+
+```{r}
+wilcox.test(sin_gen_S$AS_TpmRNA_mean,solo_AS_con_S$AS_TpmRNA_mean.x)
+```
+
+
+
+```{r}
+transcritos_AS_no_S <- table(sin_gen_S$X7)
+transcritos_AS_si_AS <- table(solo_AS_con_S$X7)
+barplot(c(median(transcritos_AS_no_S),median(transcritos_AS_si_AS)),names.arg = c("No","Si"), main = "Mediana de transcritos", xlab="Número de transcritos", col=c("lightcoral","lightblue"),horiz = TRUE,las=1, cex.names = 0.9,cex.axis=0.8,xlim=c(0,1.1))
+```
+
+
+```{r}
+wilcox.test(transcritos_AS_no_S,transcritos_AS_si_AS)
+```
+
+
