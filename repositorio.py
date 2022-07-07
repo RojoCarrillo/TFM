@@ -80,49 +80,23 @@ for nombre in antisentidos:
         if nombres == "-AS" and nombre not in antisentido:
             antisentido.append(nombre)
             
-
 for nombre in antisentido:
     for i in range(len(nombre)):
-        nombres=nombre[i:i+4]    
+        nombres=nombre[i:i+4]
         if nombres == "-AS7":
-            antisentido_gene_as7_total.append(nombre)
-
-for nombre in antisentido:
-    for i in range(len(nombre)):
-        nombres=nombre[i:i+4]   
-        if nombres == "-AS6":
+            antisentido_gene_as7_total.append(nombre)   
+        elif nombres == "-AS6":
             antisentido_gene_as6_total.append(nombre)                
-
-for nombre in antisentido:
-    for i in range(len(nombre)):
-        nombres=nombre[i:i+4]        
-        if nombres == "-AS5":
-            antisentido_gene_as5_total.append(nombre)                
-
-for nombre in antisentido:
-    for i in range(len(nombre)):
-        nombres=nombre[i:i+4]                     
-        if nombres == "-AS4":
-            antisentido_gene_as4_total.append(nombre)                
-    
-for nombre in antisentido:
-    for i in range(len(nombre)):
-        nombres=nombre[i:i+4]                     
-        if nombres == "-AS3":
+        elif nombres == "-AS5":
+            antisentido_gene_as5_total.append(nombre)                       
+        elif nombres == "-AS4":
+            antisentido_gene_as4_total.append(nombre)                           
+        elif nombres == "-AS3":
             antisentido_gene_as3_total.append(nombre)                
-                        
-for nombre in antisentido:
-    for i in range(len(nombre)):
-        nombres=nombre[i:i+4]
-        if nombres == "-AS2":
+        elif nombres == "-AS2":
             antisentido_gene_as2_total.append(nombre)
-
-for nombre in antisentido:
-    for i in range(len(nombre)):
-        nombres=nombre[i:i+4]
-        if nombres == "-AS1":
+        elif nombres == "-AS1":
             antisentido_gene_as1_total.append(nombre)
-
 
 for nombre in antisentido:
     for i in range(len(nombre)):
